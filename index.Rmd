@@ -1,0 +1,108 @@
+---
+title: "SICSS Oxford - Introduction to geospatial data and analysis"
+author: "Tobias Rüttenauer"
+date: "July 02, 2022"
+output_dir: docs
+output: 
+  html_document:
+    theme: flatly
+    highlight: haddock
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 2
+theme: united
+bibliography: sicss-spatial.bib
+link-citations: yes
+---
+
+---
+
+[Course Material](https://github.com/ruettenauer/SICSS-Spatial)
+
+---
+
+# Introduction
+
+This course material is designed for the Summer Institute in Computational Social Science (SICSS) Oxford. 
+
+The material introduces the use of geographical information to connect and analyze different spatial data sources. This introduction is limited to the fundamentals of using geographical information in _R_. The field has develops very fast over since few years, and _R_ now provides a rich set of packages for various spatial data operations. For a more in-depth introduction into spatial data analysis in _R_, have a look into the materials references below. 
+
+The course uses data sources from [UK Census](https://www.nomisweb.co.uk/sources/census_2011), [Defra](https://uk-air.defra.gov.uk/data/pcm-data), and the [London Datastore](https://data.london.gov.uk/dataset).
+
+### Why is spatial data linkage and analysis part of SICSS? 
+
+The amount of spatial ('readymade') data sources is steadily increasing. For instance, the UK open data portal provides many indicators on a spatially agrregated level: https://data.gov.uk/. Moreover, geographical information is increasingly available for traditional ('custommade') data sources, such as survey data. Using geographic information allows us to:
+
+* Link information from different (unrelated) data sources
+
+* Incorporate a spatial dimension into the analysis
+
+We can combine different sources of social science data, but we can also enrich existing social science data with information on aggregated demographics or other contextual information.
+
+![Figure: Spatial data linkage, Source: @Junger.2019](fig/fig1_Juenger.jpg)
+
+# Some examples
+
+### Evolution and epidemic spread of SARS-CoV-2 in Brazil [@Candido.2020]
+
+![](fig/Pereira.jpg)
+
+### Urban Scaling and the Regional Divide [@Keuschnigg.2019]
+
+![](fig/Keuschnigg.jpg)
+
+### Local candidates, place-based identities, and electoral success [@SchulteCloos.2021]
+
+![](fig/Schulte-cloos.jpg)
+
+### Inequality is rising where social network segregation interacts with urban topology [@Toth.2021]
+
+![](fig/Toth.jpg)
+
+### Extreme Weather Events Elevate Climate Change Belief but not Pro-Environmental Behaviour [@Ruttenauer.2021c]
+
+![](fig/Ruettenauer.jpg)
+
+### London Congestion Charge: The Impact on Air Pollution and School Attendance by Socioeconomic Status [@ConteKeivabu.2022]
+
+![](fig/Figure1_2.png)
+
+# Some useful packages
+
+By now, _R_ provides a lot of functionalities for GIS applications and spatial econometrics, and further extensions. There are lots of packages providing a huge variety of spatial functionalities and methods [see e.g. @Bivand.2021]. Important packages for fundamental spatial operations are:
+
+* Spatial data workhorses: [sf](https://cran.r-project.org/web/packages/sf/index.html) [@Pebesma.2018] and [stars](https://cran.r-project.org/web/packages/stars/index.html) [@Pebesma.2021]
+
+* Visualization: [mapview](https://cran.r-project.org/web/packages/mapview/index.html) [@Appelhans.2021] and [tmap](https://cran.r-project.org/web/packages/tmap/index.html) [@Tennekes.2018]
+
+* Spatial weights and other relations: [spdep](https://cran.r-project.org/web/packages/stars/index.html) [@Bivand.2018]
+
+* Spatial interpolation and kriging: [gstat](https://cran.r-project.org/web/packages/gstat/index.html) [@Graler.2016]
+
+* Spatial regression models: [spatialreg](https://cran.r-project.org/web/packages/spatialreg/index.html) [@Bivand.2015.0] and [sphet](https://cran.r-project.org/web/packages/sphet/index.html) [@Bivand.2015.0]
+
+# Further materials
+
+Readings
+
+* Great up-to-date introduction to spatial R: @Lovelace.2019, [updated version available online](https://geocompr.robinlovelace.net/)
+
+* Another great introduction, but __not up-to-date__: @Bivand.2013.0. However, Edzer Pebesma and Roger Bivand are working on a new open-science book on [Spatial Data Science](https://www.r-spatial.org/book)
+
+* Comprehensive introduction to spatial econometrics: @LeSage.2009.0
+
+* Article-length introductions to spatial econometrics: @HalleckVega.2015.0, @LeSage.2014.0, and @Ruttenauer.2019c
+
+Course materials
+
+* For those looking for a more in-depth introduction, I highly recommend Roger Bivand's course on Spatial Data Analysis: [Youtube recordings](https://www.youtube.com/watch?v=KkIbg50Pa0I&list=PLXUoTpMa_9s10NVk4dBQljNOaOXAOhcE0), [Course Materials](https://rsbivand.github.io/ECS530_h19/)
+
+* For a nice introduction to more GIS functionalities in R, see Stefan Jünger's [course materials](https://github.com/StefanJuenger/gesis-workshop-geospatial-techniques-R)
+
+* For a comprehensive introduction to data visualization see for instance Ilya Kashnitsky's [Dataviz course](https://github.com/ikashnitsky/dataviz-mpidr)
+
+* For more examples and an introduction to spatial regression models, see last year's [SICSS Spatial materials](https://ruettenauer.github.io/SICSS-Spatial/index.html). 
+
+# References
