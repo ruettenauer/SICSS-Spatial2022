@@ -21,8 +21,7 @@ link-citations: yes
 
 ```{r, message = FALSE, warning = FALSE, results = 'hide'}
 pkgs <- c("sf", "gstat", "mapview", "nngeo", "rnaturalearth", "dplyr",
-          "nomisr", "osmdata", "tidyr", "texreg",
-          "tmap", "tmaptools", "viridisLite") 
+          "nomisr", "osmdata", "tidyr", "texreg") 
 lapply(pkgs, require, character.only = TRUE)
 
 ```
@@ -137,11 +136,11 @@ head(msoa.spdf)
 # Similarly you can read geo.json (usually more efficient, but less common)
 # Download file
 ulez.link <- "https://data.london.gov.uk/download/ultra_low_emissions_zone/3d980a29-c340-4892-8230-ed40d8c7f32d/Ultra_Low_Emissions_Zone.json"
-download.file(ulez.link, paste0(dn, "ulez.json"))
+download.file(ulez.link, paste0(dn, "/ulez.json"))
 
 # Read geo.json
 st_layers(paste0(dn, "ulez.json"))
-ulez.spdf <- st_read(dsn = paste0(dn, "ulez.json")) # here dsn is simply the file
+ulez.spdf <- st_read(dsn = paste0(dn, "/ulez.json")) # here dsn is simply the file
 head(ulez.spdf)
 
 
@@ -295,7 +294,8 @@ So far, we have queried data on adminstrative units. However, often data comes o
 ```{r}
 # Download
 pol.link <- "https://uk-air.defra.gov.uk/datastore/pcm/mapno22011.csv"
-pol.df <- read.csv(pol.link, skip = 5, header = T, sep = ",",
+download.file(pol.link, paste0(dn, "/mapno22011.csv"))
+pol.df <- read.csv(paste0(dn, "/mapno22011.csv"), skip = 5, header = T, sep = ",",
                       stringsAsFactors = F, na.strings = "MISSING")
 
 head(pol.df)
@@ -513,202 +513,12 @@ screenreg(list(mod1.lm), digits = 3)
 ```
 
 
-
-
 ### Save spatial data
 
 ```{r}
 # Save
 save(msoa.spdf, file = "_data/msoa_spatial.RData")
 
-```
-
-
-# Maps
-
-A large advantage of spatial data is that different data sources can be connected and combined. Another nice advatange is: you can create very nice maps. And it's quite easy to do! Ilya Kashnitsky's [Dataviz course](https://github.com/ikashnitsky/dataviz-mpidr) gives a much more comprehensive introduction to maps.
-
-Many packages and functions can be used to plot maps of spatial data. For instance, ggplot as a function to plot spatial data using `geom_sf()`. I am perconally a fan of tmap, which makes many steps easier (but sometimes is less flexible).
-
-For instance, lets plot the NO2 estimates using tmap.
-
-```{r}
-
-# Define colours
-cols <- viridis(n = 7, direction = 1, option = "C")
-
-mp1 <-  tm_shape(msoa.spdf) + 
-  tm_fill(col = "no2", 
-          style = "fisher", # algorithm to def cut points
-          n = 7, # Number of requested cut points
-          palette = cols, # colours
-          alpha = 1, # transparency 
-          title = "NO2", 
-          legend.hist = FALSE # histogram next to map?
-          ) +
-  tm_borders(col = "white", lwd = 0.5, alpha = 0.5) 
-
-mp1
-
-```
-
-Tmap allows to easily combine different objects by defining a new object via `tm_shape()`.
-
-```{r}
-
-# Define colours
-cols <- viridis(n = 7, direction = 1, option = "C")
-
-mp1 <-  tm_shape(msoa.spdf) + 
-  tm_fill(col = "no2", 
-          style = "fisher", # algorithm to def cut points
-          n = 7, # Number of requested cut points
-          palette = cols, # colours
-          alpha = 1, # transparency 
-          title = "NO2", 
-          legend.hist = FALSE # histogram next to map?
-          ) +
-  tm_borders(col = "white", lwd = 0.5, alpha = 0.5) +
-  tm_shape(ulez.spdf) +
-  tm_borders(col = "red", lwd = 1, alpha = 1) 
-
-mp1
-
-```
-
-And it is easy to change the layout.
-
-```{r}
-
-# Define colours
-cols <- viridis(n = 7, direction = 1, option = "C")
-
-mp1 <-  tm_shape(msoa.spdf) + 
-  tm_fill(col = "no2", 
-          style = "fisher", # algorithm to def cut points
-          n = 7, # Number of requested cut points
-          palette = cols, # colours
-          alpha = 1, # transparency 
-          title = expression('in'~mu*'g'/m^{3}), 
-          legend.hist = FALSE # histogram next to map?
-          ) +
-  tm_borders(col = "white", lwd = 0.5, alpha = 0.5) +
-  tm_shape(ulez.spdf) +
-  tm_borders(col = "red", lwd = 1, alpha = 1) +
-  tm_layout(frame = FALSE,
-            legend.frame = TRUE, legend.bg.color = TRUE,
-            legend.position = c("right", "bottom"),
-            legend.outside = FALSE,
-            main.title = "NO2", 
-            main.title.position = "center",
-            main.title.size = 1.6,
-            legend.title.size = 0.8,
-            legend.text.size = 0.8)
-
-mp1
-
-```
-
-Obviously, we can also add some map information from OSM. However, it's sometime a bit tricky with the projection. That's why we switch into the OSM projection here.
-
-```{r}
-# Save old projection
-crs_orig <- st_crs(msoa.spdf)
-
-# Change projection
-ulez.spdf <- st_transform(ulez.spdf, 4326)
-msoa.spdf <- st_transform(msoa.spdf, 4326)
-
-# Get OSM data for background
-osm_tmp <- read_osm(st_bbox(msoa.spdf), ext = 1, 
-                    type = "stamen-toner", zoom = NULL) 
-
-# Define colours
-cols <- viridis(n = 7, direction = 1, option = "C")
-
-mp1 <-  tm_shape(osm_tmp) + tm_rgb() +
-  tm_shape(msoa.spdf) + 
-  tm_fill(col = "no2", 
-          style = "fisher", # algorithm to def cut points
-          n = 7, # Number of requested cut points
-          palette = cols, # colours
-          alpha = 0.8, # transparency 
-          title = expression('in'~mu*'g'/m^{3}), 
-          legend.hist = FALSE # histogram next to map?
-          ) +
-  #tm_borders(col = "white", lwd = 0.5, alpha = 0.5) +
-  tm_shape(ulez.spdf) +
-  tm_borders(col = "red", lwd = 1, alpha = 1) +
-  tm_layout(frame = FALSE,
-            legend.frame = TRUE, legend.bg.color = TRUE,
-            legend.position = c("right", "bottom"),
-            legend.outside = FALSE,
-            main.title = "NO2", 
-            main.title.position = "center",
-            main.title.size = 1.6,
-            legend.title.size = 0.8,
-            legend.text.size = 0.8)
-
-mp1
-
-```
-
-Tmap also makes it easy to combine single maps 
-
-```{r}
-# Define colours
-cols1 <- viridis(n = 7, direction = 1, option = "C")
-
-# Define colours
-cols2 <- viridis(n = 7, direction = 1, option = "D")
-
-mp1 <-  tm_shape(osm_tmp) + tm_rgb() +
-  tm_shape(msoa.spdf) + 
-  tm_fill(col = "no2", 
-          style = "fisher", # algorithm to def cut points
-          n = 7, # Number of requested cut points
-          palette = cols1, # colours
-          alpha = 0.8, # transparency 
-          title = expression('in'~mu*'g'/m^{3}), 
-          legend.hist = FALSE # histogram next to map?
-          ) +
-  #tm_borders(col = "white", lwd = 0.5, alpha = 0.5) +
-  tm_shape(ulez.spdf) +
-  tm_borders(col = "red", lwd = 1, alpha = 1) +
-  tm_layout(frame = FALSE,
-            legend.frame = TRUE, legend.bg.color = TRUE,
-            legend.position = c("right", "bottom"),
-            legend.outside = FALSE,
-            main.title = "NO2", 
-            main.title.position = "center",
-            main.title.size = 1.4,
-            legend.title.size = 0.8,
-            legend.text.size = 0.8)
-
-mp2 <-  tm_shape(osm_tmp) + tm_rgb() +
-  tm_shape(msoa.spdf) + 
-  tm_fill(col = "per_black", 
-          style = "fisher", # algorithm to def cut points
-          n = 7, # Number of requested cut points
-          palette = cols2, # colours
-          alpha = 0.8, # transparency 
-          title = "% white", 
-          legend.hist = FALSE # histogram next to map?
-          ) +
-  #tm_borders(col = "white", lwd = 0.5, alpha = 0.5) +
-  tm_shape(ulez.spdf) +
-  tm_borders(col = "red", lwd = 1, alpha = 1) +
-  tm_layout(frame = FALSE,
-            legend.frame = TRUE, legend.bg.color = TRUE,
-            legend.position = c("right", "bottom"),
-            legend.outside = FALSE,
-            main.title = "Ethnic Black inhabitants", 
-            main.title.position = "center",
-            main.title.size = 1.4,
-            legend.title.size = 0.8,
-            legend.text.size = 0.8)
-
-tmap_arrange(mp1, mp2, ncol = 2, nrow = 1)
 ```
 
 
@@ -723,12 +533,12 @@ First lets get some point data with associated attributes or measures. In this e
 
 
 ```{r}
-#Switch back to old projection
-msoa.spdf <- st_transform(msoa.spdf, crs_orig)
-
 # Download traffic
 traffic.link <- "https://storage.googleapis.com/dft-statistics/road-traffic/downloads/aadf/region_id/dft_aadf_region_id_6.csv"
-traffic.df <- read.csv(traffic.link)
+download.file(traffic.link, paste0(dn, "/traffic.csv"))
+
+# Read and select major roads only
+traffic.df <- read.csv(paste0(dn, "/traffic.csv"))
 traffic.df <- traffic.df[which(traffic.df$year == 2011 &
                        traffic.df$road_type == "Major"), ]
 names(traffic.df)
