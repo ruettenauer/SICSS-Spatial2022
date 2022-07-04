@@ -144,6 +144,7 @@ ulez.spdf <- st_read(dsn = paste0(dn, "/ulez.json")) # here dsn is simply the fi
 head(ulez.spdf)
 
 
+
 ```
 
 This looks like a conventional `data.frame` but has the additional column `geometry` containing the coordinates of each observation. `st_geometry()` returns only the geographic object and `st_drop_geometry()` only the `data.frame` without the coordinates. We can plot the object using `mapview()`.
@@ -269,7 +270,7 @@ for(i in ksids){
 
 
 # Descirption are saved in the codebook
-census_keystat_cb.df
+head(census_keystat_cb.df)
 
 ### Merge with MSOA geometries above
 msoa.spdf <- merge(msoa.spdf, census_keystat.df, 
@@ -518,6 +519,8 @@ screenreg(list(mod1.lm), digits = 3)
 ```{r}
 # Save
 save(msoa.spdf, file = "_data/msoa_spatial.RData")
+save(ulez.spdf, file = "_data/ulez_spatial.RData")
+
 
 ```
 

@@ -20,7 +20,8 @@ link-citations: yes
 ### Required packages
 
 ```{r, message = FALSE, warning = FALSE, results = 'hide'}
-pkgs <- c("sf", "mapview", "nngeo", "tmap", "tmaptools", "viridisLite") 
+pkgs <- c("sf", "mapview", "nngeo", "tmap", "tmaptools", "viridisLite", 
+          "ggplot2", "ggthemes", "rmapshaper") 
 lapply(pkgs, require, character.only = TRUE)
 
 ```
@@ -36,16 +37,18 @@ sessionInfo()
 
 ```{r}
 load(file = "_data/msoa_spatial.RData")
+load(file = "_data/ulez_spatial.RData")
 ```
 
 A large advantage of spatial data is that different data sources can be connected and combined. Another nice advatange is: you can create very nice maps. And it's quite easy to do! Ilya Kashnitsky's [Dataviz course](https://github.com/ikashnitsky/dataviz-mpidr) gives a much more comprehensive introduction to maps.
 
 Many packages and functions can be used to plot maps of spatial data. For instance, ggplot as a function to plot spatial data using `geom_sf()`. I am perconally a fan of tmap, which makes many steps easier (but sometimes is less flexible).
 
+A great tool for choosing coulour is for instance [Colorbrewer](https://colorbrewer2.org/). `viridisLite` provides another great resource to chose colours.
+
 # Tmaps
 
-
-For instance, lets plot the NO2 estimates using tmap.
+For instance, lets plot the NO2 estimates using tmap + `tm_fill()` (there are lots of alternatives like `tm_shape`, `tm_points()`, `tm_dots()`).
 
 ```{r}
 
@@ -224,6 +227,52 @@ mp2 <-  tm_shape(osm_tmp) + tm_rgb() +
             legend.text.size = 0.8)
 
 tmap_arrange(mp1, mp2, ncol = 2, nrow = 1)
+```
+
+And you can easily export those to png or pdf
+
+```{r}
+png(file = paste("London.png", sep = ""), width = 14, height = 7, units = "in", 
+    res = 100, bg = "white", family = "Times New Roman")
+par(mar=c(0,0,3,0))
+par(mfrow=c(1,1),oma=c(0,0,0,0))
+tmap_arrange(mp1, mp2, ncol = 2, nrow = 1)
+dev.off()
+```
+
+# ggplot
+
+```{r}
+gp <- ggplot(msoa.spdf)+
+    geom_sf(aes(fill = no2))+
+    scale_fill_viridis_c(option = "B")+
+    coord_sf(datum = NA)+
+    theme_map()+
+    theme(legend.position = c(.9, .6))
+gp
+```
+
+
+```{r}
+# Get some larger scale boundaries
+borough.spdf <- st_read(dsn = paste0(dn, "/statistical-gis-boundaries-london/ESRI"),
+                     layer = "London_Borough_Excluding_MHW" # Note: no file ending
+                     )
+
+# transform to only inner lines
+borough_inner <- ms_innerlines(borough.spdf)
+
+# Plot with inner lines
+gp <- ggplot(msoa.spdf)+
+    geom_sf(aes(fill = no2), color = NA)+
+    scale_fill_viridis_c(option = "A")+
+    geom_sf(data = borough_inner, color = "gray92")+
+    geom_sf(data = ulez.spdf, color = "red", fill = NA)+
+    coord_sf(datum = NA)+
+    theme_map()+
+    labs(fill = "NO2")+
+    theme(legend.position = c(.9, .6))
+gp
 ```
 
 
