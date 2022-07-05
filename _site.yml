@@ -22,6 +22,6 @@ navbar:
     - text: "Part 1: Using and linking spatial data"
       href: SICSS-spatial_part1.html
     - text: "Part 2: Data Visualization"
-      href: SICSS-spatial_part1.html  
+      href: SICSS-spatial_part2.html  
     - text: "Practical exercises"
       href: SICSS-spatial_part3.html  

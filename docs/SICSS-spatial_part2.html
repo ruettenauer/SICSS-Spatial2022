@@ -410,7 +410,7 @@ div.tocify {
   <a href="SICSS-spatial_part1.html">Part 1: Using and linking spatial data</a>
 </li>
 <li>
-  <a href="SICSS-spatial_part1.html">Part 2: Data Visualization</a>
+  <a href="SICSS-spatial_part2.html">Part 2: Data Visualization</a>
 </li>
 <li>
   <a href="SICSS-spatial_part3.html">Practical exercises</a>
@@ -436,8 +436,9 @@ div.tocify {
 
 <div id="required-packages" class="section level3">
 <h3>Required packages</h3>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pkgs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;sf&quot;</span>, <span class="st">&quot;mapview&quot;</span>, <span class="st">&quot;nngeo&quot;</span>, <span class="st">&quot;tmap&quot;</span>, <span class="st">&quot;tmaptools&quot;</span>, <span class="st">&quot;viridisLite&quot;</span>) </span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(pkgs, require, <span class="at">character.only =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pkgs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;sf&quot;</span>, <span class="st">&quot;mapview&quot;</span>, <span class="st">&quot;nngeo&quot;</span>, <span class="st">&quot;tmap&quot;</span>, <span class="st">&quot;tmaptools&quot;</span>, <span class="st">&quot;viridisLite&quot;</span>, </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;ggthemes&quot;</span>, <span class="st">&quot;rmapshaper&quot;</span>) </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(pkgs, require, <span class="at">character.only =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 </div>
 <div id="session-info" class="section level3">
 <h3>Session info</h3>
@@ -459,45 +460,48 @@ div.tocify {
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] viridisLite_0.4.0   tmaptools_3.1-1     tmap_3.3-3         
-##  [4] texreg_1.37.5       tidyr_1.1.3         osmdata_0.1.5      
-##  [7] nomisr_0.4.4        dplyr_1.0.6         rnaturalearth_0.1.0
-## [10] nngeo_0.4.3         mapview_2.10.0      gstat_2.0-7        
-## [13] sf_1.0-0           
+##  [1] rmapshaper_0.4.5    ggthemes_4.2.4      ggplot2_3.3.5      
+##  [4] viridisLite_0.4.0   tmaptools_3.1-1     tmap_3.3-3         
+##  [7] texreg_1.37.5       tidyr_1.1.3         osmdata_0.1.5      
+## [10] nomisr_0.4.4        dplyr_1.0.6         rnaturalearth_0.1.0
+## [13] nngeo_0.4.3         mapview_2.10.0      gstat_2.0-7        
+## [16] sf_1.0-0           
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] xts_0.12.1              satellite_1.0.2         lubridate_1.7.10       
-##  [4] RColorBrewer_1.1-2      webshot_0.5.2           httr_1.4.2             
-##  [7] tools_4.1.3             bslib_0.2.5.1           rgdal_1.5-23           
-## [10] utf8_1.2.1              R6_2.5.1                KernSmooth_2.23-20     
-## [13] rgeos_0.5-5             DBI_1.1.1               colorspace_2.0-1       
-## [16] raster_3.4-10           sp_1.4-5                tidyselect_1.1.1       
-## [19] rnaturalearthdata_0.1.0 leaflet_2.0.4.1         curl_4.3.1             
-## [22] compiler_4.1.3          leafem_0.1.6            cli_3.0.1              
-## [25] rvest_1.0.0             xml2_1.3.2              sass_0.4.0             
-## [28] scales_1.1.1            classInt_0.4-3          readr_1.4.0            
-## [31] proxy_0.4-26            nabor_0.5.0             systemfonts_1.0.2      
-## [34] stringr_1.4.0           digest_0.6.27           rmarkdown_2.11         
-## [37] svglite_2.0.0           dichromat_2.0-0         base64enc_0.1-3        
-## [40] pkgconfig_2.0.3         htmltools_0.5.1.1       highr_0.9              
-## [43] htmlwidgets_1.5.3       rlang_0.4.11            rstudioapi_0.13        
-## [46] FNN_1.1.3               jquerylib_0.1.4         generics_0.1.0         
-## [49] farver_2.1.0            zoo_1.8-9               jsonlite_1.7.2         
-## [52] crosstalk_1.1.1         magrittr_2.0.1          Rcpp_1.0.7             
-## [55] munsell_0.5.0           fansi_0.5.0             abind_1.4-5            
-## [58] lifecycle_1.0.0         leafsync_0.1.0          stringi_1.6.2          
-## [61] yaml_2.2.1              snakecase_0.11.0        plyr_1.8.6             
-## [64] grid_4.1.3              parallel_4.1.3          crayon_1.4.1           
-## [67] lattice_0.20-45         stars_0.5-3             hms_1.1.0              
-## [70] leafpop_0.1.0           knitr_1.33              pillar_1.6.2           
-## [73] uuid_0.1-4              spacetime_1.2-5         codetools_0.2-18       
-## [76] stats4_4.1.3            XML_3.99-0.6            glue_1.4.2             
-## [79] evaluate_0.14           leaflet.providers_1.9.0 png_0.1-7              
-## [82] vctrs_0.3.8             purrr_0.3.4             assertthat_0.2.1       
-## [85] xfun_0.23               lwgeom_0.2-6            e1071_1.7-7            
-## [88] class_7.3-20            rsdmx_0.6               tibble_3.1.2           
-## [91] intervals_0.15.2        units_0.7-2             ellipsis_0.3.2         
-## [94] brew_1.0-6</code></pre>
+##   [1] leafem_0.1.6            colorspace_2.0-1        ellipsis_0.3.2         
+##   [4] class_7.3-20            leaflet_2.0.4.1         rgdal_1.5-23           
+##   [7] snakecase_0.11.0        satellite_1.0.2         base64enc_0.1-3        
+##  [10] dichromat_2.0-0         httpcode_0.3.0          rstudioapi_0.13        
+##  [13] proxy_0.4-26            farver_2.1.0            fansi_0.5.0            
+##  [16] lubridate_1.7.10        xml2_1.3.2              codetools_0.2-18       
+##  [19] knitr_1.33              geojsonlint_0.4.0       jsonlite_1.7.2         
+##  [22] png_0.1-7               rgeos_0.5-5             readr_1.4.0            
+##  [25] compiler_4.1.3          httr_1.4.2              assertthat_0.2.1       
+##  [28] cli_3.0.1               leaflet.providers_1.9.0 htmltools_0.5.1.1      
+##  [31] tools_4.1.3             gtable_0.3.0            glue_1.4.2             
+##  [34] rnaturalearthdata_0.1.0 V8_3.4.2                Rcpp_1.0.7             
+##  [37] jquerylib_0.1.4         raster_3.4-10           vctrs_0.3.8            
+##  [40] crul_1.1.0              svglite_2.0.0           leafsync_0.1.0         
+##  [43] crosstalk_1.1.1         lwgeom_0.2-6            xfun_0.23              
+##  [46] stringr_1.4.0           rvest_1.0.0             lifecycle_1.0.0        
+##  [49] XML_3.99-0.6            zoo_1.8-9               scales_1.1.1           
+##  [52] rsdmx_0.6               hms_1.1.0               parallel_4.1.3         
+##  [55] RColorBrewer_1.1-2      yaml_2.2.1              curl_4.3.1             
+##  [58] sass_0.4.0              jsonvalidate_1.1.0      stringi_1.6.2          
+##  [61] highr_0.9               leafpop_0.1.0           e1071_1.7-7            
+##  [64] intervals_0.15.2        rlang_0.4.11            pkgconfig_2.0.3        
+##  [67] systemfonts_1.0.2       evaluate_0.14           lattice_0.20-45        
+##  [70] purrr_0.3.4             htmlwidgets_1.5.3       tidyselect_1.1.1       
+##  [73] plyr_1.8.6              magrittr_2.0.1          R6_2.5.1               
+##  [76] generics_0.1.0          DBI_1.1.1               pillar_1.6.2           
+##  [79] withr_2.4.2             units_0.7-2             stars_0.5-3            
+##  [82] xts_0.12.1              abind_1.4-5             sp_1.4-5               
+##  [85] tibble_3.1.2            spacetime_1.2-5         crayon_1.4.1           
+##  [88] uuid_0.1-4              KernSmooth_2.23-20      utf8_1.2.1             
+##  [91] rmarkdown_2.11          nabor_0.5.0             grid_4.1.3             
+##  [94] FNN_1.1.3               digest_0.6.27           classInt_0.4-3         
+##  [97] webshot_0.5.2           brew_1.0-6              stats4_4.1.3           
+## [100] munsell_0.5.0           bslib_0.2.5.1</code></pre>
 </div>
 <div id="load-previous-data" class="section level3">
 <h3>Load previous data</h3>
@@ -721,6 +725,41 @@ div.tocify {
 </div>
 <div id="ggplot" class="section level1">
 <h1>ggplot</h1>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>gp <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(msoa.spdf)<span class="sc">+</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">fill =</span> no2))<span class="sc">+</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">&quot;B&quot;</span>)<span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_sf</span>(<span class="at">datum =</span> <span class="cn">NA</span>)<span class="sc">+</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_map</span>()<span class="sc">+</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="fu">c</span>(.<span class="dv">9</span>, .<span class="dv">6</span>))</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>gp</span></code></pre></div>
+<p><img src="SICSS-spatial_part2_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get some larger scale boundaries</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>borough.spdf <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="fu">paste0</span>(dn, <span class="st">&quot;/statistical-gis-boundaries-london/ESRI&quot;</span>),</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">layer =</span> <span class="st">&quot;London_Borough_Excluding_MHW&quot;</span> <span class="co"># Note: no file ending</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                     )</span></code></pre></div>
+<pre><code>## Reading layer `London_Borough_Excluding_MHW&#39; from data source 
+##   `C:\work\Lehre\SICSS_Spatial2022\_data\statistical-gis-boundaries-london\ESRI&#39; 
+##   using driver `ESRI Shapefile&#39;
+## Simple feature collection with 33 features and 7 fields
+## Geometry type: MULTIPOLYGON
+## Dimension:     XY
+## Bounding box:  xmin: 503568.2 ymin: 155850.8 xmax: 561957.5 ymax: 200933.9
+## Projected CRS: OSGB 1936 / British National Grid</code></pre>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># transform to only inner lines</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>borough_inner <span class="ot">&lt;-</span> <span class="fu">ms_innerlines</span>(borough.spdf)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot with inner lines</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>gp <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(msoa.spdf)<span class="sc">+</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">fill =</span> no2), <span class="at">color =</span> <span class="cn">NA</span>)<span class="sc">+</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">&quot;A&quot;</span>)<span class="sc">+</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_sf</span>(<span class="at">data =</span> borough_inner, <span class="at">color =</span> <span class="st">&quot;gray92&quot;</span>)<span class="sc">+</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_sf</span>(<span class="at">data =</span> ulez.spdf, <span class="at">color =</span> <span class="st">&quot;red&quot;</span>, <span class="at">fill =</span> <span class="cn">NA</span>)<span class="sc">+</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_sf</span>(<span class="at">datum =</span> <span class="cn">NA</span>)<span class="sc">+</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_map</span>()<span class="sc">+</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">fill =</span> <span class="st">&quot;NO2&quot;</span>)<span class="sc">+</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="fu">c</span>(.<span class="dv">9</span>, .<span class="dv">6</span>))</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>gp</span></code></pre></div>
+<p><img src="SICSS-spatial_part2_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 </div>
 <div id="references" class="section level1">
 <h1>References</h1>
