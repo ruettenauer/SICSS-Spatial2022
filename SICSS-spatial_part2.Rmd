@@ -1,5 +1,5 @@
 ---
-title: "Part 1: Using and linking spatial data"
+title: "Part 2: Data Visualization"
 author: "Tobias Rüttenauer"
 date: "July 02, 2022"
 output_dir: docs
@@ -255,7 +255,7 @@ gp
 
 ```{r}
 # Get some larger scale boundaries
-borough.spdf <- st_read(dsn = paste0(dn, "/statistical-gis-boundaries-london/ESRI"),
+borough.spdf <- st_read(dsn = paste0("_data", "/statistical-gis-boundaries-london/ESRI"),
                      layer = "London_Borough_Excluding_MHW" # Note: no file ending
                      )
 
