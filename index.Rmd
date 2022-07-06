@@ -19,7 +19,7 @@ link-citations: yes
 
 ---
 
-[Course Material](https://github.com/ruettenauer/SICSS-Spatial)
+[Course Material](https://github.com/ruettenauer/SICSS-Spatial2022)
 
 ---
 
