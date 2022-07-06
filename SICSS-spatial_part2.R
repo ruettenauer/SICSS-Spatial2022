@@ -1,14 +1,56 @@
+#' ---
+#' title: "Part 2: Data Visualization"
+#' author: "Tobias Rüttenauer"
+#' date: "July 02, 2022"
+#' output_dir: docs
+#' output: 
+#'   html_document:
+#'     theme: flatly
+#'     highlight: haddock
+#'     toc: true
+#'     toc_float:
+#'       collapsed: false
+#'       smooth_scroll: false
+#'     toc_depth: 2
+#' theme: united
+#' bibliography: sicss-spatial.bib
+#' link-citations: yes
+#' ---
+#' 
+#' ### Required packages
+#' 
+## ---- message = FALSE, warning = FALSE, results = 'hide'----------------------------------------
 pkgs <- c("sf", "mapview", "nngeo", "tmap", "tmaptools", "viridisLite", 
           "ggplot2", "ggthemes", "rmapshaper") 
 lapply(pkgs, require, character.only = TRUE)
 
 
+#' 
+#' ### Session info
+#' 
+## -----------------------------------------------------------------------------------------------
 sessionInfo()
 
 
+#' 
+#' ### Load previous data
+#' 
+## -----------------------------------------------------------------------------------------------
 load(file = "_data/msoa_spatial.RData")
 load(file = "_data/ulez_spatial.RData")
 
+#' 
+#' A large advantage of spatial data is that different data sources can be connected and combined. Another nice advatange is: you can create very nice maps. And it's quite easy to do! Ilya Kashnitsky's [Dataviz course](https://github.com/ikashnitsky/dataviz-mpidr) gives a much more comprehensive introduction to maps.
+#' 
+#' Many packages and functions can be used to plot maps of spatial data. For instance, ggplot as a function to plot spatial data using `geom_sf()`. I am perconally a fan of tmap, which makes many steps easier (but sometimes is less flexible).
+#' 
+#' A great tool for choosing coulour is for instance [Colorbrewer](https://colorbrewer2.org/). `viridisLite` provides another great resource to chose colours.
+#' 
+#' # Tmaps
+#' 
+#' For instance, lets plot the NO2 estimates using tmap + `tm_fill()` (there are lots of alternatives like `tm_shape`, `tm_points()`, `tm_dots()`).
+#' 
+## -----------------------------------------------------------------------------------------------
 
 # Define colours
 cols <- viridis(n = 7, direction = 1, option = "C")
@@ -27,6 +69,10 @@ mp1 <-  tm_shape(msoa.spdf) +
 mp1
 
 
+#' 
+#' Tmap allows to easily combine different objects by defining a new object via `tm_shape()`.
+#' 
+## -----------------------------------------------------------------------------------------------
 
 # Define colours
 cols <- viridis(n = 7, direction = 1, option = "C")
@@ -47,6 +93,10 @@ mp1 <-  tm_shape(msoa.spdf) +
 mp1
 
 
+#' 
+#' And it is easy to change the layout.
+#' 
+## -----------------------------------------------------------------------------------------------
 
 # Define colours
 cols <- viridis(n = 7, direction = 1, option = "C")
@@ -76,6 +126,10 @@ mp1 <-  tm_shape(msoa.spdf) +
 mp1
 
 
+#' 
+#' Obviously, we can also add some map information from OSM. However, it's sometime a bit tricky with the projection. That's why we switch into the OSM projection here.
+#' 
+## -----------------------------------------------------------------------------------------------
 # Save old projection
 crs_orig <- st_crs(msoa.spdf)
 
@@ -116,6 +170,10 @@ mp1 <-  tm_shape(osm_tmp) + tm_rgb() +
 mp1
 
 
+#' 
+#' Tmap also makes it easy to combine single maps 
+#' 
+## -----------------------------------------------------------------------------------------------
 # Define colours
 cols1 <- viridis(n = 7, direction = 1, option = "C")
 
@@ -170,6 +228,10 @@ mp2 <-  tm_shape(osm_tmp) + tm_rgb() +
 
 tmap_arrange(mp1, mp2, ncol = 2, nrow = 1)
 
+#' 
+#' And you can easily export those to png or pdf
+#' 
+## -----------------------------------------------------------------------------------------------
 png(file = paste("London.png", sep = ""), width = 14, height = 7, units = "in", 
     res = 100, bg = "white", family = "Times New Roman")
 par(mar=c(0,0,3,0))
@@ -177,6 +239,10 @@ par(mfrow=c(1,1),oma=c(0,0,0,0))
 tmap_arrange(mp1, mp2, ncol = 2, nrow = 1)
 dev.off()
 
+#' 
+#' # ggplot
+#' 
+## -----------------------------------------------------------------------------------------------
 gp <- ggplot(msoa.spdf)+
     geom_sf(aes(fill = no2))+
     scale_fill_viridis_c(option = "B")+
@@ -185,6 +251,9 @@ gp <- ggplot(msoa.spdf)+
     theme(legend.position = c(.9, .6))
 gp
 
+#' 
+#' 
+## -----------------------------------------------------------------------------------------------
 # Get some larger scale boundaries
 borough.spdf <- st_read(dsn = paste0("_data", "/statistical-gis-boundaries-london/ESRI"),
                      layer = "London_Borough_Excluding_MHW" # Note: no file ending
@@ -204,3 +273,7 @@ gp <- ggplot(msoa.spdf)+
     labs(fill = "NO2")+
     theme(legend.position = c(.9, .6))
 gp
+
+#' 
+#' 
+#' # References

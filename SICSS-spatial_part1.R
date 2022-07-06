@@ -1,11 +1,60 @@
+#' ---
+#' title: "Part 1: Using and linking spatial data"
+#' author: "Tobias Rüttenauer"
+#' date: "July 02, 2022"
+#' output_dir: docs
+#' output: 
+#'   html_document:
+#'     theme: flatly
+#'     highlight: haddock
+#'     toc: true
+#'     toc_float:
+#'       collapsed: false
+#'       smooth_scroll: false
+#'     toc_depth: 2
+#' theme: united
+#' bibliography: sicss-spatial.bib
+#' link-citations: yes
+#' ---
+#' 
+#' ### Required packages
+#' 
+## ---- message = FALSE, warning = FALSE, results = 'hide'----------------------------------------
 pkgs <- c("sf", "gstat", "mapview", "nngeo", "rnaturalearth", "dplyr",
           "nomisr", "osmdata", "tidyr", "texreg") 
 lapply(pkgs, require, character.only = TRUE)
 
 
+#' 
+#' ### Session info
+#' 
+## -----------------------------------------------------------------------------------------------
 sessionInfo()
 
 
+#' 
+#' # Coordinates
+#' 
+#' In general, spatial data is structured like conventional data (e.g. data.frames, matrices), but has one additional dimension: every observation is linked to some sort of geo-spatial information. Most common types of spatial information are:
+#' 
+#' * Points (one coordinate pair)
+#' 
+#' * Lines (two coordinate pairs)
+#' 
+#' * Polygons (at least three coordinate pairs)
+#' 
+#' * Regular grids (one coordinate pair for centroid + raster / grid size)
+#' 
+#' 
+#' ## Coordinate reference system (CRS)
+#' 
+#' In its raw form, a pair of coordinates consists of two numerical values. For instance, the pair `c(51.752595, -1.262801)` describes the location of Nuffield College in Oxford (one point). The fist number represents the latitude (north-south direction), the second number is the longitude (west-east direction), both are in decimal degrees.
+#' 
+#' ![Figure: Latitude and longitude, Source: [Wikipedia](https://en.wikipedia.org/wiki/Geographic_coordinate_system)](fig/lat-long.png)
+#' 
+#' However, we need to specify a reference point for latitudes and longitudes (in the Figure above: equator and Greenwich). For instance, the pair of coordinates above comes from Google Maps which returns GPS coordinates in 'WGS 84' ([EPSG:4326](https://epsg.io/4326)). 
+#' 
+## -----------------------------------------------------------------------------------------------
 # Coordinate pairs of two locations
 coords1 <- c(51.752595, -1.262801)
 coords2 <- c(51.753237, -1.253904)
@@ -27,6 +76,20 @@ nuffield.spdf <- st_as_sf(nuffield.df,
 mapview(nuffield.spdf, zcol = "name")
 
 
+#' 
+#' ## Projected CRS
+#' 
+#' However, different data providers use different CRS. For instance, spatial data in the UK usually uses 'OSGB 1936 / British National Grid' ([EPSG:27700](https://epsg.io/27700)). Here, coordinates are in meters, and projected onto a planar 2D space. 
+#' 
+#' There are a lot of different CRS projections, and different national statistics offices provide data in different projections. Data providers usually specify which reference system they use. This is important as using the correct reference system and projection is crucial for plotting and manipulating spatial data. 
+#' 
+#' If you do not know the correct CRS, try starting with a standards CRS like [EPSG:4326](https://epsg.io/4326) if you have decimal degree like coordinates. If it looks like projected coordinates, try searching for the country or region in CRS libraries like https://epsg.io/. However, you must check if the projected coordinates match their real location, e.g. using `mpaview()`.
+#' 
+#' ## Why different projections?
+#' 
+#' By now, (most) people agree that [the earth is not flat](https://r-spatial.org/r/2020/06/17/s2.html). So, to plot data on a 2D planar surface and to perform certain operations on a planar world, we need to make some re-projections. Depending on where we are, different re-projections of our data might work better than others.
+#' 
+## -----------------------------------------------------------------------------------------------
 world <- ne_countries(scale = "medium", returnclass = "sf")
 class(world)
 st_crs(world)
@@ -40,6 +103,18 @@ ger_rep.spdf <- st_transform(ger.spdf, crs = 5325)
 plot(st_geometry(ger_rep.spdf))
 
 
+#' 
+#' Depending on the angle, a 2D projection of the earth looks different. It is important to choose a suitable projection for the available spatial data. For more information on CRS and re-projection, see e.g. @Lovelace.2019.
+#' 
+#' 
+#' # Importing some real word data
+#' 
+#' `sf` imports many of the most common spatial data files, like geojson, gpkg, or shp. 
+#' 
+#' ## London shapefile (polygon)
+#' 
+#' Lets get some administrative boundaries for London from the [London Datastore](https://data.london.gov.uk/dataset/statistical-gis-boundary-files-london). 
+## -----------------------------------------------------------------------------------------------
 # Create subdir 
 dn <- "_data"
 ifelse(dir.exists(dn), "Exists", dir.create(dn))
@@ -71,9 +146,21 @@ head(ulez.spdf)
 
 
 
+#' 
+#' This looks like a conventional `data.frame` but has the additional column `geometry` containing the coordinates of each observation. `st_geometry()` returns only the geographic object and `st_drop_geometry()` only the `data.frame` without the coordinates. We can plot the object using `mapview()`.
+#' 
+## -----------------------------------------------------------------------------------------------
 mapview(msoa.spdf[, "POPDEN"])
 
 
+#' 
+#' ## Census API (admin units)
+#' 
+#' Now that we have some boundaries and shapes of spatial units in London, we can start looking for different data sources to populate the geometries.
+#' 
+#' A good source for demographic data is for instance the 2011 census. Below we use the nomis API to retrieve population data for London, See the [Vignette](https://cran.r-project.org/web/packages/nomisr/vignettes/introduction.html) for more information (Guest users are limited to 25,000 rows per query). Below is a wrapper to avoid some mess with sex and urban-rural cross-tabs.
+#' 
+## -----------------------------------------------------------------------------------------------
 ### For larger request, register and set key
 # Sys.setenv(NOMIS_API_KEY = "XXX")
 # nomis_api_key(check_env = TRUE)
@@ -190,12 +277,22 @@ msoa.spdf <- merge(msoa.spdf, census_keystat.df,
                    by.x = "MSOA11CD", by.y = "msoa11", all.x = TRUE)
 
 
+#' 
+#' Now we can, for instance, plot the spatial distribution of ethnic groups.
+#' 
+## -----------------------------------------------------------------------------------------------
 
 msoa.spdf$per_white <- msoa.spdf$KS201EW_100 / msoa.spdf$KS201EW0001 * 100
 
 mapview(msoa.spdf[, "per_white"])
 
 
+#' 
+#' ## Gridded data
+#' 
+#' So far, we have queried data on adminstrative units. However, often data comes on other spatial scales. For instance, we might be interested in the amount of air pollution, which is provided on a regular grid across the UK from [Defra](https://uk-air.defra.gov.uk/data/pcm-data).
+#' 
+## -----------------------------------------------------------------------------------------------
 # Download
 pol.link <- "https://uk-air.defra.gov.uk/datastore/pcm/mapno22011.csv"
 download.file(pol.link, paste0(dn, "/mapno22011.csv"))
@@ -216,6 +313,15 @@ pol.spdf <- st_buffer(pol.spdf, dist = 500, nQuadSegs  = 1,
 # Plot NO2
 plot(pol.spdf[, "no22011"], border = NA)
 
+#' 
+#' 
+#' 
+#' ## OpenStreetMap (points)
+#' 
+#' Another interesting data source is the OpenStreetMap API, which provides information about the geographical location of a serious of different indicators. Robin Lovelace provides a nice introduction to the [osmdata API](https://cran.r-project.org/web/packages/osmdata/vignettes/osmdata.html). Available features can be found on [OSM wiki](https://wiki.openstreetmap.org/wiki/Map_features).
+#' 
+#' 
+## -----------------------------------------------------------------------------------------------
 # First we create a bounding box of where we want to query data
 # st_bbox() can be used to get bounding boxes of an existing spatial object (needs CRS = 4326)
 # q <- opq(bbox = 'greater london uk')
@@ -245,6 +351,23 @@ pubs.spdf <- pubs.points
 
 
 
+#' 
+#' Note that OSM is solely based on contribution by users, and the __quality of OSM data varies__. Usually data quality is better in larger cities, adn better for more stable features (such as hospitals, train stations, highways). However, data from [London Datastore](https://data.london.gov.uk/dataset/cultural-infrastructure-map) would indicate more pubs than what we find with OSM.
+#' 
+#' 
+#' 
+#' 
+#' 
+#' # Manipulation and linkage
+#' 
+#' Having data with geo-spatial information allows to perform a variety of methods to manipulate and link different data sources. Commonly used methods include 1) subsetting, 2) point-in-polygon operations, 3) distance measures, 4) intersections or buffer methods.
+#' 
+#' The [online Vignettes of the sf package](https://r-spatial.github.io/sf/articles/) provide a comprehensive overview of the multiple ways of spatial manipulations.
+#' 
+#' 
+#' #### Check if data is on common projection
+#' 
+## -----------------------------------------------------------------------------------------------
 st_crs(msoa.spdf) == st_crs(pol.spdf)
 st_crs(msoa.spdf) == st_crs(pubs.spdf)
 st_crs(msoa.spdf) == st_crs(ulez.spdf)
@@ -260,6 +383,12 @@ ulez.spdf <- st_transform(ulez.spdf, crs = st_crs(msoa.spdf))
 msoa.spdf <- st_make_valid(msoa.spdf)
 
 
+#' 
+#' ## Subsetting
+#' 
+#' We can subset spatial data in a similar way as we subset conventional data.frames or matrices. For instance, below we simply reduce the pollution grid across the UK to observations in London only.
+#' 
+## -----------------------------------------------------------------------------------------------
 
 # Subset to pollution estimates in London
 pol_sub.spdf <- pol.spdf[msoa.spdf, ] # or:
@@ -267,6 +396,10 @@ pol_sub.spdf <- st_filter(pol.spdf, msoa.spdf)
 mapview(pol_sub.spdf)
 
 
+#' 
+#' Or we can reverse the above and exclude all intersecting units by specifying `st_disjoint` as alternative spatial operation using the `op =` option (note the empty space for column selection). `st_filter()` with the `.predicate` option does the same job. See the [sf Vignette](https://cran.r-project.org/web/packages/sf/vignettes/sf3.html) for more operations.
+#' 
+## -----------------------------------------------------------------------------------------------
 # Subset pubs to pubs not in the ulez area
 sub2.spdf <- pubs.spdf[ulez.spdf, , op = st_disjoint] # or:
 sub2.spdf <- st_filter(pubs.spdf, ulez.spdf, .predicate = st_disjoint)
@@ -279,6 +412,12 @@ msoa.spdf$ulez[which(msoa.spdf$MSOA11CD %in% within$MSOA11CD)] <- 1
 table(msoa.spdf$ulez)
 
 
+#' 
+#' ## Point in polygon
+#' 
+#' We are interested in the number of pubs in each MSOA. So, we count the number of points in each polygon.
+#' 
+## -----------------------------------------------------------------------------------------------
 # Assign MSOA to each point
 pubs_msoa.join <- st_join(pubs.spdf, msoa.spdf, join = st_within)
 
@@ -294,6 +433,12 @@ msoa.spdf <- merge(msoa.spdf, pubs_msoa.join,
 msoa.spdf$pubs_count[is.na(msoa.spdf$pubs_count)] <- 0
 
 
+#' 
+#' ## Distance measures
+#' 
+#' We might be interested in the distance to the nearest pub. Here, we use the package `nngeo` to find k nearest neighbours with the respective distance.
+#' 
+## -----------------------------------------------------------------------------------------------
 # Use geometric centroid of each MSOA
 cent.sp <- st_centroid(msoa.spdf[, "MSOA11CD"])
 
@@ -305,6 +450,13 @@ msoa.spdf$dist_pubs <- unlist(knb.dist$dist)
 summary(msoa.spdf$dist_pubs)
 
 
+#' 
+#' 
+#' ## Intersections + Buffers
+#' 
+#' We might also be interested in the average tree cover density within 1 km radius around each MSOA centroid. Therefore, we first create a buffer with `st_buffer()` around each midpoint and subsequently use `st_intersetion()` to calculate the overlap.
+#' 
+## -----------------------------------------------------------------------------------------------
 # Create buffer (1km radius)
 cent.buf <- st_buffer(cent.sp, dist = 1000)
 mapview(cent.buf)
@@ -332,6 +484,19 @@ msoa.spdf <- merge(msoa.spdf, int.df, by = "MSOA11CD", all.x = TRUE)
 mapview(msoa.spdf[, "no2"])
 
 
+#' 
+#' Note: for buffer related methods, it often makes sense to use population weighted centroids instead of geographic centroids (see [here](https://geoportal.statistics.gov.uk/datasets/ons::middle-layer-super-output-areas-december-2011-population-weighted-centroids/about) for MSOA population weighted centroids). However, often this information is not available.
+#' 
+#' 
+#' 
+#' 
+#' ### Air pollution and ethnic minorities
+#' 
+#' With a few lines of code, we have compiled an original dataset containing demographic information, air pollution, and some infrastructural information. 
+#' 
+#' Let's see what we can do with it.
+#' 
+## -----------------------------------------------------------------------------------------------
 # Define ethnic group shares
 msoa.spdf$per_mixed <- msoa.spdf$KS201EW_200 / msoa.spdf$KS201EW0001 * 100
 msoa.spdf$per_asian <- msoa.spdf$KS201EW_300 / msoa.spdf$KS201EW0001 * 100
@@ -352,12 +517,30 @@ mod1.lm <- lm(no2 ~ per_mixed + per_asian + per_black + per_other +
 screenreg(list(mod1.lm), digits = 3)
 
 
+#' 
+#' 
+#' ### Save spatial data
+#' 
+## -----------------------------------------------------------------------------------------------
 # Save
 save(msoa.spdf, file = "_data/msoa_spatial.RData")
 save(ulez.spdf, file = "_data/ulez_spatial.RData")
 
 
 
+#' 
+#' 
+#' 
+#' 
+#' # Interpolation and Kriging
+#' 
+#' For (sparse) point data, we the nearest count point often might be far away from where we want to measure or merge its attributes. A potential solution is to spatially interpolate the data (e.g. on a regular grid): given a specific function of space (and covariates), we make prediction about an attribute at "missing" locations. For more details, see, for instance, [Spatial Data Science](https://keen-swartz-3146c4.netlify.app/interpolation.html) or [Introduction to Spatial Data Programming with R](https://keen-swartz-3146c4.netlify.app/interpolation.html).
+#' 
+#' First lets get some point data with associated attributes or measures. In this example, we use traffic counts provided by the [Department for Transport](https://roadtraffic.dft.gov.uk/regions/6).
+#' 
+#' 
+#' 
+## -----------------------------------------------------------------------------------------------
 # Download traffic
 traffic.link <- "https://storage.googleapis.com/dft-statistics/road-traffic/downloads/aadf/region_id/dft_aadf_region_id_6.csv"
 download.file(traffic.link, paste0(dn, "/traffic.csv"))
@@ -384,6 +567,10 @@ mapview(traffic.spdf[, "all_motor_vehicles"])
 save(traffic.spdf, file = "_data/traffic.RData")
 
 
+#' 
+#' To interpolate, we first create a grid surface over London on which we make predictions.
+#' 
+## -----------------------------------------------------------------------------------------------
 # Set up regular grid over London with 1km cell size
 london.sp <- st_union(st_geometry(msoa.spdf))
 grid <- st_make_grid(london.sp, cellsize = 1000)
@@ -395,6 +582,10 @@ mapview(grid)
 
 
 
+#' 
+#' There are various ways of interpolating. Common methods are nearest neighbours matching or inverse distance weighted interpolation (using `idw()`): each value at a given point is a weighted average of surrounding values, where weights are a function of distance.
+#' 
+## -----------------------------------------------------------------------------------------------
 # IDW interpolation
 all_motor.idw <- idw(all_motor_vehicles ~ 1,
                      locations = traffic.spdf,
@@ -402,6 +593,13 @@ all_motor.idw <- idw(all_motor_vehicles ~ 1,
                      idp = 2) # power of distance decay
 mapview(all_motor.idw[, "var1.pred"])
 
+#' 
+#' IDW is a fairly simple way of interpolation and it assumes a deterministic form of spatial dependence.
+#' 
+#' Another technique is Kriging, which estimates values as a function of a deterministic trend and a random process. However, we have to set some hyper-parameters for that: sill, range, nugget, and the functional form. Therefore, we first need to fit a semi-variogram. Subsequently, we let the `fit.variogram()` function chose the parameters based on the empirical variogram [see for instance [r-spatial Homepage](https://r-spatial.org/r/2016/02/14/gstat-variogram-fitting.html)].
+#' 
+#' 
+## -----------------------------------------------------------------------------------------------
 # Variogram
 all_motor.var <- variogram(all_motor_vehicles ~ 1,
                           traffic.spdf)
@@ -430,6 +628,15 @@ all_motor.kg <- krige(all_motor_vehicles ~ 1,
 mapview(all_motor.kg[, "var1.pred"])
 
 
+#' 
+#' The example above is a little bit tricky, given that traffic does not follow a random process, but (usually) follows the street network. We would probably increase the performance by either adding the street network (e.g. using [osmdata](https://cran.r-project.org/web/packages/osmdata/vignettes/osmdata.html) OSM Overpass API) and interpolating along this network, or by adding covariates to our prediction (Universal Kriging). With origin - destination data, we could use [stplanr](https://cran.r-project.org/web/packages/stplanr/vignettes/stplanr-od.html) for routing along the street network.
+#' 
+#' Alternatively, we can use integrated nested Laplace approximation with [R-INLA](https://becarioprecario.bitbucket.io/inla-gitbook/index.html) [@GomezRubio.2020].
+#' 
+#' However, lets add the predictions to our original msoa data using the `st_intersection()` operation as above.
+#' 
+#' 
+## -----------------------------------------------------------------------------------------------
 # Calculate intersection
 smoa_grid.int <- st_intersection(msoa.spdf, all_motor.kg)
 
@@ -441,3 +648,9 @@ smoa_grid.int <- aggregate(list(traffic = smoa_grid.int$var1.pred),
 # Merge back
 msoa.spdf <- merge(msoa.spdf, smoa_grid.int, by = "MSOA11CD", all.x = TRUE)
 
+
+#' 
+#' 
+#' 
+#' 
+#' # References
