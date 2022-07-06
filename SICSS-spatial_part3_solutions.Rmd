@@ -1,0 +1,351 @@
+---
+title: "Practical exercises: solutions"
+author: "Tobias Rüttenauer"
+date: "July 02, 2022"
+output_dir: docs
+output: 
+  html_document:
+    theme: flatly
+    highlight: haddock
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 2
+theme: united
+bibliography: sicss-spatial.bib
+link-citations: yes
+---
+
+### Required packages
+
+```{r, message = FALSE, warning = FALSE, results = 'hide'}
+pkgs <- c("sf", "nngeo", "mapview", "nomisr", "tmap", "tmaptools", 
+          "osmdata", "randomForest") # note: load spdep first, then spatialreg
+lapply(pkgs, require, character.only = TRUE)
+
+```
+
+### Session info
+
+```{r}
+sessionInfo()
+
+```
+  
+### Load spatial data
+
+See previous file.
+
+```{r}
+load("_data/msoa_spatial.RData")
+
+```
+
+# Exercise 1
+
+Add a variable for the distance to Boris Johnson's home (10 Downing St, London SW1A 2AB, UK). 
+
+    * You could either find the coordinates manually or you use `tmaptools` function `geocode_OSM()` using OpenStreetMaps. 
+    
+    * There are also Google Maps APIs like `ggmap` or `mapsapi` but they require registration.
+    
+    * You can also search for something completely different.
+
+```{r}
+# Geocode an address using tmaptools
+adr <- "10 Downing St, London SW1A 2AB, UK"
+boris.spdf <- geocode_OSM(adr, as.sf = TRUE)
+mapview(boris.spdf)
+
+# Transform into same projection
+boris.spdf <- st_transform(boris.spdf, crs = st_crs(msoa.spdf))
+
+# Copute distances betweens msoas and Boris 
+msoa.spdf$dist_boris <- as.numeric(st_distance(msoa.spdf, boris.spdf))
+
+```
+
+# Exercise 2
+
+Please think about other potential variables you could add to the previous data which might be relevant for predicting NO2.
+
+  * You can for instance use the census API, or the OpenStreetMap API
+  
+  * You can also search for other data in the [London Datastore](https://data.london.gov.uk/dataset/cultural-infrastructure-map) 
+  
+### Census API  
+
+```{r}
+### Add census data, country of origin (KS204EW)
+
+london_ids <- msoa.spdf$MSOA11CD
+x <- nomis_data_info()
+
+# Get internal ids
+stats <- c("KS204EW")
+oo <- which(grepl(paste(stats, collapse = "|"), x$name.value))
+ksids <- x$id[oo]
+ksids # This are the internal ids
+
+
+# Query data in loop over the required statistics
+for(i in ksids){
+
+  # Determin if data is divided by sex or urban-rural
+  nd <- nomis_get_metadata(id = i)
+  if("RURAL_URBAN" %in% nd$conceptref){
+    UR <- TRUE
+  }else{
+    UR <- FALSE
+  }
+  if("C_SEX" %in% nd$conceptref){
+    SEX <- TRUE
+  }else{
+    SEX <- FALSE
+  }
+
+  # make data request
+  if(UR == TRUE){
+    if(SEX == TRUE){
+      tmp_en <- nomis_get_data(id = i, time = "2011", 
+                               geography = london_ids, # replace with "TYPE297" for all MSOAs
+                               measures = 20100, RURAL_URBAN = 0, C_SEX = 0)
+    }else{
+      tmp_en <- nomis_get_data(id = i, time = "2011", 
+                               geography = london_ids, # replace with "TYPE297" for all MSOAs
+                               measures = 20100, RURAL_URBAN = 0)
+    }
+  }else{
+    if(SEX == TRUE){
+      tmp_en <- nomis_get_data(id = i, time = "2011", 
+                               geography = london_ids, # replace with "TYPE297" for all MSOAs
+                               measures = 20100, C_SEX = 0)
+    }else{
+      tmp_en <- nomis_get_data(id = i, time = "2011", 
+                               geography = london_ids, # replace with "TYPE297" for all MSOAs
+                               measures = 20100)
+    }
+
+  }
+
+  # Append (in case of different regions)
+  ks_tmp <- tmp_en
+
+  # Make lower case names
+  names(ks_tmp) <- tolower(names(ks_tmp))
+  names(ks_tmp)[names(ks_tmp) == "geography_code"] <- "msoa11"
+  names(ks_tmp)[names(ks_tmp) == "geography_name"] <- "name"
+
+  # replace weird cell codes
+  onlynum <- which(grepl("^[[:digit:]]+$", ks_tmp$cell_code))
+  if(length(onlynum) != 0){
+    code <- substr(ks_tmp$cell_code[-onlynum][1], 1, 7)
+    if(is.na(code)){
+      code <- i
+    }
+    ks_tmp$cell_code[onlynum] <- paste0(code, "_", ks_tmp$cell_code[onlynum])
+  }
+
+  # save codebook
+  ks_cb <- unique(ks_tmp[, c("date", "cell_type", "cell", "cell_code", "cell_name")])
+
+  ### Reshape
+  ks_res <- tidyr::pivot_wider(ks_tmp, id_cols = c("msoa11", "name"),
+                               names_from = "cell_code",
+                               values_from = "obs_value")
+
+  ### Merge
+  if(i == ksids[1]){
+    census_keystat.df <- ks_res
+    census_keystat_cb.df <- ks_cb
+  }else{
+    census_keystat.df <- merge(census_keystat.df, ks_res, by = c("msoa11", "name"), all = TRUE)
+    census_keystat_cb.df <- rbind(census_keystat_cb.df, ks_cb)
+  }
+
+}
+
+
+# Merge with MSOA geometries above
+msoa.spdf <- merge(msoa.spdf, census_keystat.df, 
+                   by.x = "MSOA11CD", by.y = "msoa11", all.x = TRUE)
+
+# Percent non-EU residents
+msoa.spdf$per_eu <- (msoa.spdf$KS204EW_100 + msoa.spdf$KS204EW_200) / msoa.spdf$KS204EW0001 * 100
+msoa.spdf$per_non_eu <- 100 - msoa.spdf$per_eu
+
+```
+
+
+
+### OpenStreetMaps  
+
+```{r}
+
+# Bounding box
+q <- opq(bbox = st_bbox(st_transform(msoa.spdf, 4326)))
+
+# Lets get industrial landuse areas
+osmq <- add_osm_feature(q, key = "highway", value = c("motorway", "trunk"))
+
+# Query
+highway.osm <- osmdata_sf(osmq)
+
+# Make unique points / polygons 
+highway.osm <- unique_osmdata(highway.osm)
+
+# Get the lines is this case
+highway.spdf <- highway.osm$osm_lines
+
+# Drop OSM file
+rm(highway.osm); gc()
+
+plot(st_geometry(highway.spdf))
+
+
+# Calculate distance for each MSOA
+# Use geometric centroid of each MSOA
+cent.sp <- st_centroid(msoa.spdf[, "MSOA11CD"])
+
+# get into sam projection
+highway.spdf <- st_transform(highway.spdf, st_crs(msoa.spdf))
+
+# Get K nearest neighbour with distance
+knb.dist <- st_nn(cent.sp, highway.spdf,
+                  k = 1, returnDist = TRUE,
+                  progress = FALSE)
+msoa.spdf$dist_highway <- unlist(knb.dist$dist)
+
+mapview(msoa.spdf[, "dist_highway"])
+```
+
+
+### London Data store
+
+```{r}
+# Get low emission neighbourhood
+lowemission.link <- "https://data.london.gov.uk/download/low_emission_neighbourhoods/a1eb1018-8933-4e69-96ca-97402637ad92/Low_Emission_Neighbourhoods.gpkg"
+
+# This time, we have Geopackage format (gpkg)
+tmpf <- tempfile(fileext = ".gpkg")
+download.file(lowemission.link, destfile = tmpf, mode = "wb")
+
+# And we only load the layer containing pubs
+st_layers(tmpf)
+lowemission.spdf <- st_read(dsn = tmpf)
+unlink(tmpf)
+
+# Someting is wrong here with projection! Assign manually
+st_crs(lowemission.spdf) <- 27700
+
+mapview(st_geometry(lowemission.spdf))
+
+# MSOA intersects with low emission zone?
+lowemission.spdf <- st_transform(lowemission.spdf, st_crs(msoa.spdf))
+msoa.spdf$lez <- 0
+within <- msoa.spdf[lowemission.spdf,]
+msoa.spdf$lez[which(msoa.spdf$MSOA11CD %in% within$MSOA11CD)] <- 1
+table(msoa.spdf$lez)
+
+```
+
+# Exercise 3
+
+Given you have added new data, can you use some model to predict the importance of single variables for predicting NO2 levels across London?
+
+```{r}
+# Train a random forest
+rf.mod <- randomForest(no2 ~ per_mixed + per_asian + per_black + per_other + 
+                         per_owner + per_social + pubs_count + POPDEN + ulez + lez +
+                         per_non_eu + dist_highway + dist_boris, 
+                       data = st_drop_geometry(msoa.spdf), 
+                       mtry = 2, 
+                       ntree = 1000,
+                       importance = TRUE)
+
+# Inspect the mechanics of the model
+varImpPlot(rf.mod)
+
+# Partial dependence plots
+imp <- importance(rf.mod)
+impvar <- rownames(imp)[order(imp[, 1], decreasing=TRUE)]
+op <- par(mfrow=c(2, 3))
+for (i in seq_along(impvar)) {
+    partialPlot(rf.mod, st_drop_geometry(msoa.spdf), impvar[i], xlab=impvar[i],
+                main=paste("Partial Dependence on", impvar[i]),
+                ylim=c(27, 34)
+                )
+}
+par(op)
+```
+
+
+# Exercise 4
+
+In case you still have some time left, can you draw a map of the spatial distribution of deprivation in London?
+
+  * The [Index of Multiple Deprivation](https://www.gov.uk/guidance/english-indices-of-deprivation-2019-mapping-resources) offers several resources for mapping.
+  
+  * [Geoportal](https://geoportal.statistics.gov.uk/) is a great resource for geographical boundaries
+
+```{r}
+dn <- "_data"
+
+# Read index of multiple deprivation
+imd.link <- "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/845345/File_7_-_All_IoD2019_Scores__Ranks__Deciles_and_Population_Denominators_3.csv"
+download.file(imd.link, paste0(dn, "/imd.csv"))
+imd.df <- read.csv(paste0(dn, "/imd.csv"))
+
+# Clean names
+header <- make.names(tolower(names(imd.df)))
+header <- gsub(".*\\.\\.imd\\.\\.(.*)$", "imd.\\1", header)
+header <- gsub(".*\\.\\.idaci\\.\\.(.*)$", "idaci.\\1", header)
+header <- gsub(".*\\.\\.idaopi\\.\\.(.*)$", "idaopi.\\1", header)
+header <- gsub("education\\.\\.", "education\\.", header)
+header <- gsub("\\.\\..*", "", header)
+header <- gsub("rank\\.of\\.(.*)\\.score", "\\1.rank", header)
+header <- gsub("rank\\.of\\.(.*)", "\\1.rank", header)
+header <- gsub("crime\\.and\\.disorder", "crime", header)
+header <- gsub("idaci", "income\\.children", header)
+header <- gsub("idaopi", "income\\.older", header)
+header <- gsub("children\\.and\\.young", "children\\.young", header)
+header <- gsub("lsoa\\.code", "lsoa", header)
+names(imd.df) <- header
+
+### For now, we plot only London
+# If you want to map for England, get the shape file here: https://geoportal.statistics.gov.uk/search?collection=Dataset&sort=name&tags=all(BDY_LSOA%2CDEC_2011)
+
+# Read LSOA layer of shapefile
+lsoa.spdf <- st_read(dsn = paste0(dn, "/statistical-gis-boundaries-london/ESRI"),
+                     layer = "LSOA_2011_London_gen_MHW" 
+                     )
+
+# Merge London lsoa and imd
+lsoa.spdf <- merge(lsoa.spdf, imd.df,
+                   by.x = "LSOA11CD", by.y = "lsoa", all.y = FALSE)
+
+
+# Map the index of multiple deprivation score
+# Here we use a continous scale with tmap
+mp3 <- tm_shape(lsoa.spdf) + 
+  tm_fill(col = "imd.score", 
+          style = "cont", # algorithm to def cut points
+          palette = "inferno", # colours
+          alpha = 1, # transparency 
+          title = "Score", 
+          legend.hist = FALSE # histogram next to map?
+          ) +
+  tm_layout(frame = FALSE,
+            legend.frame = TRUE, legend.bg.color = TRUE,
+            legend.position = c("right", "bottom"),
+            legend.outside = FALSE,
+            main.title = "Multiple Deprivation", 
+            main.title.position = "center",
+            main.title.size = 1.4,
+            legend.title.size = 0.8,
+            legend.text.size = 0.8)
+
+mp3
+```
+
