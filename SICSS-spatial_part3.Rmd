@@ -32,7 +32,15 @@ See below three practical exercises. Please choose the one you are most interest
 
   * You can for instance use the census API, or the OpenStreetMap API.
   
-  * You can also search for other data in the [London Datastore](https://data.london.gov.uk/dataset/cultural-infrastructure-map).     
+  * You can also search for other data in the [London Datastore](https://data.london.gov.uk/dataset/cultural-infrastructure-map). 
+  
+  * You can also search for something completely different.
     
 
 3. Given you have added new data, can you use some model to predict the importance of single variables for predicting NO2 levels across London?
+
+4. In case you still have some time left, can you draw a map of the spatial distribution of deprivation in England?
+
+  * The [Index of Multiple Deprivation](https://www.gov.uk/guidance/english-indices-of-deprivation-2019-mapping-resources) offers several resources for mapping.
+  
+  * [Geoportal](https://geoportal.statistics.gov.uk/) is a great resource for geographical boundaries.  

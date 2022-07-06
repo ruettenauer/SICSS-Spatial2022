@@ -139,7 +139,7 @@ ulez.link <- "https://data.london.gov.uk/download/ultra_low_emissions_zone/3d980
 download.file(ulez.link, paste0(dn, "/ulez.json"))
 
 # Read geo.json
-st_layers(paste0(dn, "ulez.json"))
+st_layers(paste0(dn, "/ulez.json"))
 ulez.spdf <- st_read(dsn = paste0(dn, "/ulez.json")) # here dsn is simply the file
 head(ulez.spdf)
 
