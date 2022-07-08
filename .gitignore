@@ -3,5 +3,6 @@
 *.Rhistory
 *.RData
 *.Ruserdata
-_data/
+_data/*
+!_data/msoa_spatial.RData
 .Rproj.user
